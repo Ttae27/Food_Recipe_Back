@@ -16,7 +16,7 @@ type Ingredient struct {
 type IngredientCategory struct {
 	gorm.Model
 	Type        string
-	Ingredients []Ingredient
+	Ingredients []Ingredient_IngredientCategory
 }
 
 type Ingredient_IngredientCategory struct {
