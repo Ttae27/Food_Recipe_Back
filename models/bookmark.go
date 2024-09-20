@@ -1,8 +1,8 @@
 package models
 
 type Bookmark struct {
-	UserId uint
+	UserID uint
 	User   User
-	PostId uint
+	PostID uint
 	Post   Post
 }

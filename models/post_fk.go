@@ -1,22 +1,22 @@
 package models
 
 type Post_Like struct {
-	PostId uint
+	PostID uint
 	Post   Post
-	UserId uint
+	UserID uint
 	User   User
 }
 
 type Post_Comment struct {
-	PostId    uint
-	Post      Post
-	CommentId uint
+	PostID    uint
+	CommentID uint
 	Comment   Comment
 }
 
-type Post_Material struct {
-	PostId     uint
-	Post       Post
-	MaterialId uint
-	Material   Material
+type Post_Ingredient struct {
+	PostID       uint
+	Post         Post
+	IngredientID uint
+	Ingredient   Ingredient
+	Quantity     uint
 }

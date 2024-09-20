@@ -6,7 +6,5 @@ import (
 
 type Comment struct {
 	gorm.Model
-	UserId  uint
-	User    User
 	Comment string
 }
