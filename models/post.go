@@ -6,23 +6,23 @@ import (
 
 type Post struct {
 	gorm.Model
-	Title       string
-	Detail      string
-	Ingredients []Ingredient `gorm:"many2many:Post_Ingredient;"`
-	Recipe      string
-	Picture     string
-	Like        []User `gorm:"many2many:Post_Like;"`
-	Comments    []Comment
-	Calories    uint
-	Price       uint
-	TimeToCook  uint
-	Bookmarks   []User `gorm:"many2many:Bookmark;"`
+	Title        string
+	Detail       string
+	Ingredients  []Ingredient `gorm:"many2many:Post_Ingredient;"`
+	Recipe       string
+	Picture      string
+	Like         []User `gorm:"many2many:Post_Like;"`
+	PostComments []Post_Comment
+	Calories     uint
+	Price        uint
+	TimeToCook   uint
+	Bookmarks    []User `gorm:"many2many:Bookmark;"`
 }
 
 type Category struct {
 	gorm.Model
-	Type  string
-	Posts []Post
+	Type           string
+	PostCategories []Post_Category
 }
 
 type Post_Category struct {
