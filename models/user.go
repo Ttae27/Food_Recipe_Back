@@ -13,7 +13,7 @@ type User struct {
 	PictureProfile string
 	Bookmarks      []Post `gorm:"many2many:Bookmark;"`
 	Likes          []Post `gorm:"many2many:Post_Like;"`
-	Comments       []Comment
+	UserComments   []User_Comment
 }
 
 type User_Comment struct {

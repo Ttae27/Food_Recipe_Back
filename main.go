@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/Ttae27/Food_Recipe_Back/models"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -39,7 +40,7 @@ func main() {
 		panic("failed to connect ot database")
 	}
 
-	db.AutoMigrate()
+	db.AutoMigrate(&models.Bookmark{}, &models.Comment{}, &models.Ingredient{}, &models.IngredientCategory{}, &models.Ingredient_IngredientCategory{}, &models.Post_Like{}, &models.Post_Comment{}, &models.Post_Ingredient{}, &models.Post{}, &models.Category{}, &models.Post_Category{}, &models.User{}, &models.User_Comment{})
 
 	app := fiber.New()
 
