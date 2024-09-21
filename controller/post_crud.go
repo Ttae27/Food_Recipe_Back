@@ -68,3 +68,26 @@ func CreatePost(db *gorm.DB, c *fiber.Ctx) error {
 
 	return c.SendString("Create Post Successful")
 }
+
+func GetPost(db *gorm.DB, c *fiber.Ctx) error {
+	var post models.Post
+	postId := c.Params("id")
+
+	result := db.Preload("Ingredients").Preload("PostComments").Preload("Like").First(&post, postId)
+	if result.Error != nil {
+		log.Fatal("Error getting post: %v", result.Error)
+	}
+
+	return c.JSON(post)
+}
+
+func GetsPost(db *gorm.DB, c *fiber.Ctx) error {
+	var posts []models.Post
+
+	result := db.Preload("Ingredients").Preload("PostComments").Preload("Like").Find(&posts)
+	if result.Error != nil {
+		log.Fatal("Error getting post: %v", result.Error)
+	}
+
+	return c.JSON(posts)
+}

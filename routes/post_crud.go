@@ -11,13 +11,12 @@ func Routes_Post(db *gorm.DB, app *fiber.App) {
 	app.Post("/post", func(c *fiber.Ctx) error {
 		return controller.CreatePost(db, c)
 	})
-	// app.Post("/post")
-	// app.Get("/post", func(c *fiber.Ctx) error {
-	// 	return GetsPost(db, c)
-	// })
-	// app.Get("/post/:id", func(c *fiber.Ctx) error {
-	// 	return GetPost(db, c)
-	// })
+	app.Get("/post", func(c *fiber.Ctx) error {
+		return controller.GetsPost(db, c)
+	})
+	app.Get("/post/:id", func(c *fiber.Ctx) error {
+		return controller.GetPost(db, c)
+	})
 	// app.Put("/post/:id", func(c *fiber.Ctx) error {
 	// 	return UpdatePost(db, c)
 	// })

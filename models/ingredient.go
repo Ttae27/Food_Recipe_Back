@@ -11,6 +11,7 @@ type Ingredient struct {
 	Price    uint
 	Picture  string
 	Unit     string
+	Posts    []Post `gorm:"many2many:Post_Ingredient;"`
 }
 
 type IngredientCategory struct {
