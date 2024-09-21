@@ -106,3 +106,42 @@ func DeletePost(db *gorm.DB, c *fiber.Ctx) error {
 
 	return c.SendString("Delete successfully")
 }
+
+func UpdatePost(db *gorm.DB, c *fiber.Ctx) error {
+	form, err := c.MultipartForm()
+	id, _ := strconv.Atoi(c.Params("id"))
+	oldPost := new(models.Post)
+	newPost := new(models.Post)
+
+	result := db.First(&oldPost, id)
+	if result.Error != nil {
+		log.Fatal("Error getting post to update: %v", result.Error)
+	}
+	err = json.Unmarshal([]byte(form.Value["post"][0]), &newPost)
+	if err != nil {
+		return err
+	}
+	db.Model(&oldPost).Updates(newPost)
+
+	db.Model(&oldPost).Association("Ingredients").Clear()
+
+	ingredient := strings.Trim(form.Value["ingredient"][0], "[]")
+	ingredientSlice := strings.Split(ingredient, ",")
+	quantity := strings.Trim(form.Value["quantity"][0], "[]")
+	quantitySlice := strings.Split(quantity, ",")
+
+	for index, ingredients := range ingredientSlice {
+		postIn := new(models.Post_Ingredient)
+		postIn.PostID = uint(id)
+		i, _ := strconv.ParseUint(ingredients, 10, 64)
+		postIn.IngredientID = uint(i)
+		i, _ = strconv.ParseUint(quantitySlice[index], 10, 64)
+		postIn.Quantity = uint(i)
+		result := db.Create(postIn)
+		if result.Error != nil {
+			log.Fatal("Error insert(update) ingredient to post: %v", result.Error)
+		}
+	}
+
+	return c.SendString("update post successful")
+}

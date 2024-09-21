@@ -17,9 +17,9 @@ func Routes_Post(db *gorm.DB, app *fiber.App) {
 	app.Get("/post/:id", func(c *fiber.Ctx) error {
 		return controller.GetPost(db, c)
 	})
-	// app.Put("/post/:id", func(c *fiber.Ctx) error {
-	// 	return UpdatePost(db, c)
-	// })
+	app.Put("/post/:id", func(c *fiber.Ctx) error {
+		return controller.UpdatePost(db, c)
+	})
 	app.Delete("/post/:id", func(c *fiber.Ctx) error {
 		return controller.DeletePost(db, c)
 	})
