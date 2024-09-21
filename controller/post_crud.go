@@ -91,3 +91,18 @@ func GetsPost(db *gorm.DB, c *fiber.Ctx) error {
 
 	return c.JSON(posts)
 }
+
+func DeletePost(db *gorm.DB, c *fiber.Ctx) error {
+	var post models.Post
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+	}
+	result := db.Delete(&post, id)
+
+	if result.Error != nil {
+		log.Fatal("Error delete post: %v", result.Error)
+	}
+
+	return c.SendString("Delete successfully")
+}
