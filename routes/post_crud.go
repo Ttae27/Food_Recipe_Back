@@ -23,4 +23,9 @@ func Routes_Post(db *gorm.DB, app *fiber.App) {
 	app.Delete("/post/:id", func(c *fiber.Ctx) error {
 		return controller.DeletePost(db, c)
 	})
+
+	//Comment endpoints
+	app.Post("/post/comment", func(c *fiber.Ctx) error {
+		return controller.AddComment(db, c)
+	})
 }

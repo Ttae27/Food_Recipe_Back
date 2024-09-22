@@ -34,7 +34,7 @@ func CreatePost(db *gorm.DB, c *fiber.Ctx) error {
 
 	result := db.Create(post)
 	if result.Error != nil {
-		log.Fatal("Error creating post: %v", result.Error)
+		log.Fatal("Error creating post: ", result.Error)
 	}
 
 	//add category
@@ -44,7 +44,7 @@ func CreatePost(db *gorm.DB, c *fiber.Ctx) error {
 	postCat.CategoryID = uint(i)
 	result = db.Create(postCat)
 	if result.Error != nil {
-		log.Fatal("Error insert ingredient to post: %v", result.Error)
+		log.Fatal("Error insert ingredient to post: ", result.Error)
 	}
 
 	//manage form to add to table Post_ingredient
@@ -62,7 +62,7 @@ func CreatePost(db *gorm.DB, c *fiber.Ctx) error {
 		postIn.Quantity = uint(i)
 		result := db.Create(postIn)
 		if result.Error != nil {
-			log.Fatal("Error insert ingredient to post: %v", result.Error)
+			log.Fatal("Error insert ingredient to post: ", result.Error)
 		}
 	}
 
@@ -73,9 +73,9 @@ func GetPost(db *gorm.DB, c *fiber.Ctx) error {
 	var post models.Post
 	postId := c.Params("id")
 
-	result := db.Preload("Ingredients").Preload("PostComments").Preload("Like").First(&post, postId)
+	result := db.Preload("Ingredients").Preload("Like").Preload("PostComments").Preload("PostComments.Comment").First(&post, postId)
 	if result.Error != nil {
-		log.Fatal("Error getting post: %v", result.Error)
+		log.Fatal("Error getting post: ", result.Error)
 	}
 
 	return c.JSON(post)
@@ -86,7 +86,7 @@ func GetsPost(db *gorm.DB, c *fiber.Ctx) error {
 
 	result := db.Preload("Ingredients").Preload("PostComments").Preload("Like").Find(&posts)
 	if result.Error != nil {
-		log.Fatal("Error getting post: %v", result.Error)
+		log.Fatal("Error getting post: ", result.Error)
 	}
 
 	return c.JSON(posts)
@@ -101,7 +101,7 @@ func DeletePost(db *gorm.DB, c *fiber.Ctx) error {
 	result := db.Delete(&post, id)
 
 	if result.Error != nil {
-		log.Fatal("Error delete post: %v", result.Error)
+		log.Fatal("Error delete post: ", result.Error)
 	}
 
 	return c.SendString("Delete successfully")
@@ -109,13 +109,16 @@ func DeletePost(db *gorm.DB, c *fiber.Ctx) error {
 
 func UpdatePost(db *gorm.DB, c *fiber.Ctx) error {
 	form, err := c.MultipartForm()
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+	}
 	id, _ := strconv.Atoi(c.Params("id"))
 	oldPost := new(models.Post)
 	newPost := new(models.Post)
 
 	result := db.First(&oldPost, id)
 	if result.Error != nil {
-		log.Fatal("Error getting post to update: %v", result.Error)
+		log.Fatal("Error getting post to update: ", result.Error)
 	}
 	err = json.Unmarshal([]byte(form.Value["post"][0]), &newPost)
 	if err != nil {
@@ -139,9 +142,42 @@ func UpdatePost(db *gorm.DB, c *fiber.Ctx) error {
 		postIn.Quantity = uint(i)
 		result := db.Create(postIn)
 		if result.Error != nil {
-			log.Fatal("Error insert(update) ingredient to post: %v", result.Error)
+			log.Fatal("Error insert(update) ingredient to post: ", result.Error)
 		}
 	}
 
 	return c.SendString("update post successful")
+}
+
+func AddComment(db *gorm.DB, c *fiber.Ctx) error {
+	form, err := c.MultipartForm()
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+	}
+	comment := new(models.Comment)
+	comment.Comment = form.Value["comment"][0]
+	result := db.Create(comment)
+	if result.Error != nil {
+		log.Fatal("Error creating comment: ", result.Error)
+	}
+
+	user_comment := new(models.User_Comment)
+	user_comment.CommentID = comment.ID
+	i, _ := strconv.ParseUint(form.Value["token"][0], 10, 64)
+	user_comment.UserID = uint(i)
+	result = db.Create(user_comment)
+	if result.Error != nil {
+		log.Fatal("Error creating comment: ", result.Error)
+	}
+
+	post_comment := new(models.Post_Comment)
+	post_comment.CommentID = comment.ID
+	i, _ = strconv.ParseUint(form.Value["postid"][0], 10, 64)
+	post_comment.PostID = uint(i)
+	result = db.Create(post_comment)
+	if result.Error != nil {
+		log.Fatal("Error creating comment: ", result.Error)
+	}
+
+	return c.SendString("Add comment successful")
 }
