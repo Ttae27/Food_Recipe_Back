@@ -25,7 +25,10 @@ func Routes_Post(db *gorm.DB, app *fiber.App) {
 	})
 
 	//Comment endpoints
-	app.Post("/post/comment", func(c *fiber.Ctx) error {
+	app.Post("/comment", func(c *fiber.Ctx) error {
 		return controller.AddComment(db, c)
+	})
+	app.Delete("/comment", func(c *fiber.Ctx) error {
+		return controller.DeleteComment(db, c)
 	})
 }

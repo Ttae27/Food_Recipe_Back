@@ -181,3 +181,33 @@ func AddComment(db *gorm.DB, c *fiber.Ctx) error {
 
 	return c.SendString("Add comment successful")
 }
+
+func DeleteComment(db *gorm.DB, c *fiber.Ctx) error {
+	var comment models.Comment
+	form, err := c.MultipartForm()
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+	}
+	id, err := strconv.ParseUint(form.Value["commentid"][0], 10, 64)
+	if err != nil {
+		return c.SendString("193")
+	}
+	result := db.Delete(&comment, id)
+	if result.Error != nil {
+		log.Fatal("Error delete post: ", result.Error)
+	}
+
+	cid, _ := strconv.ParseUint(form.Value["postid"][0], 10, 64)
+	result = db.Where("post_id = ? and comment_id = ?", cid, id).Delete(&models.Post_Comment{})
+	if result.Error != nil {
+		log.Fatal("Error delete post: ", result.Error)
+	}
+
+	uid, _ := strconv.ParseUint(form.Value["token"][0], 10, 64)
+	result = db.Where("user_id = ? and comment_id = ?", uid, id).Delete(&models.User_Comment{})
+	if result.Error != nil {
+		log.Fatal("Error delete post: ", result.Error)
+	}
+
+	return c.SendString("delete comment successful")
+}
