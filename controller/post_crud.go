@@ -20,10 +20,11 @@ func CreatePost(db *gorm.DB, c *fiber.Ctx) error {
 
 	post := new(models.Post)
 	//add based post
-	err = json.Unmarshal([]byte(form.Value["post"][0]), &post)
-	if err != nil {
-		return err
-	}
+	post.Title = form.Value["title"][0]
+	post.Detail = form.Value["detail"][0]
+	post.Recipe = form.Value["recipe"][0]
+	i, _ := strconv.ParseUint(form.Value["timetocook"][0], 10, 64)
+	post.TimeToCook = uint(i)
 
 	image := form.File["image"][0]
 	destination := fmt.Sprintf("./uploads/%s", image.Filename)
@@ -40,7 +41,7 @@ func CreatePost(db *gorm.DB, c *fiber.Ctx) error {
 	//add category
 	postCat := new(models.Post_Category)
 	postCat.PostID = post.ID
-	i, _ := strconv.ParseUint(form.Value["category"][0], 10, 64)
+	i, _ = strconv.ParseUint(form.Value["category"][0], 10, 64)
 	postCat.CategoryID = uint(i)
 	result = db.Create(postCat)
 	if result.Error != nil {
