@@ -279,3 +279,14 @@ func DeleteBookmark(db *gorm.DB, c *fiber.Ctx) error {
 
 	return c.JSON("delete bookmark successful")
 }
+
+func GetsIngredient(db *gorm.DB, c *fiber.Ctx) error {
+	var ingredients []models.IngredientCategory
+
+	result := db.Preload("Ingredients").Preload("Ingredients.Ingredient").Find(&ingredients)
+	if result.Error != nil {
+		log.Fatal("Error getting ingredients: ", result.Error)
+	}
+
+	return c.JSON(ingredients)
+}

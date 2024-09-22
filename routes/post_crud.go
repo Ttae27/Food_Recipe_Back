@@ -47,4 +47,9 @@ func Routes_Post(db *gorm.DB, app *fiber.App) {
 	app.Delete("/bookmark", func(c *fiber.Ctx) error {
 		return controller.DeleteBookmark(db, c)
 	})
+
+	//Ingredient endpoints
+	app.Get("/ingredient", func(c *fiber.Ctx) error {
+		return controller.GetsIngredient(db, c)
+	})
 }
