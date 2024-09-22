@@ -211,3 +211,37 @@ func DeleteComment(db *gorm.DB, c *fiber.Ctx) error {
 
 	return c.SendString("delete comment successful")
 }
+
+func AddLike(db *gorm.DB, c *fiber.Ctx) error {
+	form, err := c.MultipartForm()
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+	}
+	post_like := new(models.Post_Like)
+	i, _ := strconv.ParseUint(form.Value["postid"][0], 10, 64)
+	post_like.PostID = uint(i)
+	i, _ = strconv.ParseUint(form.Value["token"][0], 10, 64)
+	post_like.UserID = uint(i)
+	result := db.Create(post_like)
+	if result.Error != nil {
+		log.Fatal("Error creating comment: ", result.Error)
+	}
+
+	return c.JSON("add like successful")
+}
+
+func DeleteLike(db *gorm.DB, c *fiber.Ctx) error {
+	form, err := c.MultipartForm()
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+	}
+
+	pid, _ := strconv.ParseUint(form.Value["postid"][0], 10, 64)
+	uid, _ := strconv.ParseUint(form.Value["token"][0], 10, 64)
+	result := db.Where("post_id = ? and user_id = ?", pid, uid).Delete(&models.Post_Like{})
+	if result.Error != nil {
+		log.Fatal("Error delete post: ", result.Error)
+	}
+
+	return c.JSON("delete like successful")
+}

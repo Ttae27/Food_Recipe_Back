@@ -31,4 +31,12 @@ func Routes_Post(db *gorm.DB, app *fiber.App) {
 	app.Delete("/comment", func(c *fiber.Ctx) error {
 		return controller.DeleteComment(db, c)
 	})
+
+	//Like endpoints
+	app.Post("/like", func(c *fiber.Ctx) error {
+		return controller.AddLike(db, c)
+	})
+	app.Delete("/like", func(c *fiber.Ctx) error {
+		return controller.DeleteLike(db, c)
+	})
 }
