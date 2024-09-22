@@ -39,4 +39,12 @@ func Routes_Post(db *gorm.DB, app *fiber.App) {
 	app.Delete("/like", func(c *fiber.Ctx) error {
 		return controller.DeleteLike(db, c)
 	})
+
+	//Bookmark endpoints
+	app.Post("/bookmark", func(c *fiber.Ctx) error {
+		return controller.AddBookmark(db, c)
+	})
+	app.Delete("/bookmark", func(c *fiber.Ctx) error {
+		return controller.DeleteBookmark(db, c)
+	})
 }

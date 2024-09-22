@@ -194,19 +194,19 @@ func DeleteComment(db *gorm.DB, c *fiber.Ctx) error {
 	}
 	result := db.Delete(&comment, id)
 	if result.Error != nil {
-		log.Fatal("Error delete post: ", result.Error)
+		log.Fatal("Error delete comment: ", result.Error)
 	}
 
 	cid, _ := strconv.ParseUint(form.Value["postid"][0], 10, 64)
 	result = db.Where("post_id = ? and comment_id = ?", cid, id).Delete(&models.Post_Comment{})
 	if result.Error != nil {
-		log.Fatal("Error delete post: ", result.Error)
+		log.Fatal("Error delete comment: ", result.Error)
 	}
 
 	uid, _ := strconv.ParseUint(form.Value["token"][0], 10, 64)
 	result = db.Where("user_id = ? and comment_id = ?", uid, id).Delete(&models.User_Comment{})
 	if result.Error != nil {
-		log.Fatal("Error delete post: ", result.Error)
+		log.Fatal("Error delete comment: ", result.Error)
 	}
 
 	return c.SendString("delete comment successful")
@@ -224,7 +224,7 @@ func AddLike(db *gorm.DB, c *fiber.Ctx) error {
 	post_like.UserID = uint(i)
 	result := db.Create(post_like)
 	if result.Error != nil {
-		log.Fatal("Error creating comment: ", result.Error)
+		log.Fatal("Error add Like: ", result.Error)
 	}
 
 	return c.JSON("add like successful")
@@ -240,8 +240,42 @@ func DeleteLike(db *gorm.DB, c *fiber.Ctx) error {
 	uid, _ := strconv.ParseUint(form.Value["token"][0], 10, 64)
 	result := db.Where("post_id = ? and user_id = ?", pid, uid).Delete(&models.Post_Like{})
 	if result.Error != nil {
-		log.Fatal("Error delete post: ", result.Error)
+		log.Fatal("Error delete like: ", result.Error)
 	}
 
 	return c.JSON("delete like successful")
+}
+
+func AddBookmark(db *gorm.DB, c *fiber.Ctx) error {
+	form, err := c.MultipartForm()
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+	}
+	bookmark := new(models.Bookmark)
+	i, _ := strconv.ParseUint(form.Value["postid"][0], 10, 64)
+	bookmark.PostID = uint(i)
+	i, _ = strconv.ParseUint(form.Value["token"][0], 10, 64)
+	bookmark.UserID = uint(i)
+	result := db.Create(bookmark)
+	if result.Error != nil {
+		log.Fatal("Error add bookmark: ", result.Error)
+	}
+
+	return c.JSON("add bookmark successful")
+}
+
+func DeleteBookmark(db *gorm.DB, c *fiber.Ctx) error {
+	form, err := c.MultipartForm()
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+	}
+
+	pid, _ := strconv.ParseUint(form.Value["postid"][0], 10, 64)
+	uid, _ := strconv.ParseUint(form.Value["token"][0], 10, 64)
+	result := db.Where("post_id = ? and user_id = ?", pid, uid).Delete(&models.Bookmark{})
+	if result.Error != nil {
+		log.Fatal("Error delete bookmark: ", result.Error)
+	}
+
+	return c.JSON("delete bookmark successful")
 }
