@@ -2,14 +2,16 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"time"
+
 	"github.com/Ttae27/Food_Recipe_Back/models"
+	"github.com/Ttae27/Food_Recipe_Back/routes"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"log"
-	"os"
-	"time"
 )
 
 const (
@@ -44,5 +46,6 @@ func main() {
 
 	app := fiber.New()
 
+	routes.Routes_Post(db, app)
 	log.Fatal(app.Listen(":8080"))
 }
