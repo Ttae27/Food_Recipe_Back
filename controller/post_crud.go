@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"strconv"
@@ -121,13 +120,13 @@ func UpdatePost(db *gorm.DB, c *fiber.Ctx) error {
 	if result.Error != nil {
 		log.Fatal("Error getting post to update: ", result.Error)
 	}
-	err = json.Unmarshal([]byte(form.Value["post"][0]), &newPost)
-	if err != nil {
-		return err
-	}
+	newPost.Title = form.Value["title"][0]
+	newPost.Detail = form.Value["detail"][0]
+	newPost.Recipe = form.Value["recipe"][0]
+	i, _ := strconv.ParseUint(form.Value["timetocook"][0], 10, 64)
+	newPost.TimeToCook = uint(i)
+	db.Model(&oldPost).Association("Ingredients").Clear() // delete association
 	db.Model(&oldPost).Updates(newPost)
-
-	db.Model(&oldPost).Association("Ingredients").Clear()
 
 	ingredient := strings.Trim(form.Value["ingredient"][0], "[]")
 	ingredientSlice := strings.Split(ingredient, ",")
