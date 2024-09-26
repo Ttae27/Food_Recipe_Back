@@ -8,6 +8,8 @@ type Post struct {
 	gorm.Model
 	Title        string
 	Detail       string
+	CategoryID   uint
+	Category     Category
 	Ingredients  []Ingredient `gorm:"many2many:Post_Ingredient;"`
 	Recipe       string
 	Picture      string

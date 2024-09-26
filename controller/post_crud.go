@@ -24,6 +24,8 @@ func CreatePost(db *gorm.DB, c *fiber.Ctx) error {
 	post.Recipe = form.Value["recipe"][0]
 	i, _ := strconv.ParseUint(form.Value["timetocook"][0], 10, 64)
 	post.TimeToCook = uint(i)
+	i, _ = strconv.ParseUint(form.Value["category"][0], 10, 64)
+	post.CategoryID = uint(i)
 
 	image := form.File["image"][0]
 	destination := fmt.Sprintf("./uploads/%s", image.Filename)
@@ -73,7 +75,7 @@ func GetPost(db *gorm.DB, c *fiber.Ctx) error {
 	var post models.Post
 	postId := c.Params("id")
 
-	result := db.Preload("Ingredients").Preload("Like").Preload("PostComments").Preload("PostComments.Comment").First(&post, postId)
+	result := db.Preload("Ingredients").Preload("Like").Preload("PostComments").Preload("PostComments.Comment").Preload("Category").First(&post, postId)
 	if result.Error != nil {
 		log.Fatal("Error getting post: ", result.Error)
 	}
