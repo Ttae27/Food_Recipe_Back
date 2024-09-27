@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"strconv"
@@ -25,6 +24,8 @@ func CreatePost(db *gorm.DB, c *fiber.Ctx) error {
 	post.Recipe = form.Value["recipe"][0]
 	i, _ := strconv.ParseUint(form.Value["timetocook"][0], 10, 64)
 	post.TimeToCook = uint(i)
+	i, _ = strconv.ParseUint(form.Value["category"][0], 10, 64)
+	post.CategoryID = uint(i)
 
 	image := form.File["image"][0]
 	destination := fmt.Sprintf("./uploads/%s", image.Filename)
@@ -74,7 +75,7 @@ func GetPost(db *gorm.DB, c *fiber.Ctx) error {
 	var post models.Post
 	postId := c.Params("id")
 
-	result := db.Preload("Ingredients").Preload("Like").Preload("PostComments").Preload("PostComments.Comment").First(&post, postId)
+	result := db.Preload("Ingredients").Preload("Like").Preload("PostComments").Preload("PostComments.Comment").Preload("Category").First(&post, postId)
 	if result.Error != nil {
 		log.Fatal("Error getting post: ", result.Error)
 	}
@@ -121,13 +122,13 @@ func UpdatePost(db *gorm.DB, c *fiber.Ctx) error {
 	if result.Error != nil {
 		log.Fatal("Error getting post to update: ", result.Error)
 	}
-	err = json.Unmarshal([]byte(form.Value["post"][0]), &newPost)
-	if err != nil {
-		return err
-	}
+	newPost.Title = form.Value["title"][0]
+	newPost.Detail = form.Value["detail"][0]
+	newPost.Recipe = form.Value["recipe"][0]
+	i, _ := strconv.ParseUint(form.Value["timetocook"][0], 10, 64)
+	newPost.TimeToCook = uint(i)
+	db.Model(&oldPost).Association("Ingredients").Clear() // delete association
 	db.Model(&oldPost).Updates(newPost)
-
-	db.Model(&oldPost).Association("Ingredients").Clear()
 
 	ingredient := strings.Trim(form.Value["ingredient"][0], "[]")
 	ingredientSlice := strings.Split(ingredient, ",")
@@ -282,9 +283,21 @@ func DeleteBookmark(db *gorm.DB, c *fiber.Ctx) error {
 }
 
 func GetsIngredient(db *gorm.DB, c *fiber.Ctx) error {
-	var ingredients []models.IngredientCategory
+	var ingredient models.IngredientCategory
+	categoryId := c.Params("id")
 
-	result := db.Preload("Ingredients").Preload("Ingredients.Ingredient").Find(&ingredients)
+	result := db.Preload("Ingredients").Preload("Ingredients.Ingredient").First(&ingredient, categoryId)
+	if result.Error != nil {
+		log.Fatal("Error getting ingredients: ", result.Error)
+	}
+
+	return c.JSON(ingredient)
+}
+
+func GetsAllIngredient(db *gorm.DB, c *fiber.Ctx) error {
+	var ingredients []models.Ingredient
+
+	result := db.Find(&ingredients)
 	if result.Error != nil {
 		log.Fatal("Error getting ingredients: ", result.Error)
 	}

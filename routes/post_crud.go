@@ -50,6 +50,9 @@ func Routes_Post(db *gorm.DB, app *fiber.App) {
 
 	//Ingredient endpoints
 	app.Get("/ingredient", func(c *fiber.Ctx) error {
+		return controller.GetsAllIngredient(db, c)
+	})
+	app.Get("ingredient/:id", func(c *fiber.Ctx) error {
 		return controller.GetsIngredient(db, c)
 	})
 }
