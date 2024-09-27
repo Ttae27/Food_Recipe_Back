@@ -283,9 +283,21 @@ func DeleteBookmark(db *gorm.DB, c *fiber.Ctx) error {
 }
 
 func GetsIngredient(db *gorm.DB, c *fiber.Ctx) error {
-	var ingredients []models.IngredientCategory
+	var ingredient models.IngredientCategory
+	categoryId := c.Params("id")
 
-	result := db.Preload("Ingredients").Preload("Ingredients.Ingredient").Find(&ingredients)
+	result := db.Preload("Ingredients").Preload("Ingredients.Ingredient").First(&ingredient, categoryId)
+	if result.Error != nil {
+		log.Fatal("Error getting ingredients: ", result.Error)
+	}
+
+	return c.JSON(ingredient)
+}
+
+func GetsAllIngredient(db *gorm.DB, c *fiber.Ctx) error {
+	var ingredients []models.Ingredient
+
+	result := db.Find(&ingredients)
 	if result.Error != nil {
 		log.Fatal("Error getting ingredients: ", result.Error)
 	}
