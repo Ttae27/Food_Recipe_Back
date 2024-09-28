@@ -85,6 +85,7 @@ func main() {
 
 	// Set up routes for Posts
 	routes.Routes_Post(db, app)
+	routes.Routes_Search_Post(db, app)
 
 	// Get the server port from environment variable and start server
 	serverPort := ":" + os.Getenv("SERVER_PORT")

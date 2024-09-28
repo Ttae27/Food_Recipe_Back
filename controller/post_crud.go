@@ -55,6 +55,28 @@ func CreatePost(db *gorm.DB, c *fiber.Ctx) error {
 	quantity := strings.Trim(form.Value["quantity"][0], "[]")
 	quantitySlice := strings.Split(quantity, ",")
 
+	// Calculate total calories for the post
+	totalCalories, err := CalculateCalories(db, ingredientSlice, quantitySlice)
+	if err != nil {
+		log.Fatal("Error calculating calories: ", err)
+		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+	}
+	post.Calories = uint(totalCalories)
+
+	// Calculate total price for the post
+	totalPrice, err := CalculatePrice(db, ingredientSlice, quantitySlice)
+	if err != nil {
+		log.Fatal("Error calculating price: ", err)
+		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+	}
+	post.Price = uint(totalPrice)
+
+	// Save updated post with the calculated calories and price
+	result = db.Save(post)
+	if result.Error != nil {
+		log.Fatal("Error saving post with calories and price: ", result.Error)
+	}
+
 	for index, ingredients := range ingredientSlice {
 		postIn := new(models.Post_Ingredient)
 		postIn.PostID = post.ID
@@ -146,6 +168,29 @@ func UpdatePost(db *gorm.DB, c *fiber.Ctx) error {
 		if result.Error != nil {
 			log.Fatal("Error insert(update) ingredient to post: ", result.Error)
 		}
+	}
+
+	// Calculate total Calories
+	totalCalories, err := CalculateCalories(db, ingredientSlice, quantitySlice)
+	if err != nil {
+		log.Println("Error in calculating calories:", err)
+		return c.Status(fiber.StatusInternalServerError).SendString("Error calculating calories")
+	}
+
+	// Calculate total Price
+	totalPrice, err := CalculatePrice(db, ingredientSlice, quantitySlice)
+	if err != nil {
+		log.Println("Error in calculating price:", err)
+		return c.Status(fiber.StatusInternalServerError).SendString("Error calculating price")
+	}
+
+	oldPost.Calories = uint(totalCalories)
+	oldPost.Price = uint(totalPrice)
+
+	result = db.Save(oldPost)
+	if result.Error != nil {
+		log.Println("Error saving updated post:", result.Error)
+		return c.Status(fiber.StatusInternalServerError).SendString("Error saving updated post")
 	}
 
 	return c.SendString("update post successful")

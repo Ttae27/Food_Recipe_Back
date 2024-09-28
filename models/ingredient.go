@@ -7,8 +7,8 @@ import (
 type Ingredient struct {
 	gorm.Model
 	Name     string
-	Calories uint
-	Price    uint
+	Calories float64
+	Price    float64
 	Picture  string
 	Unit     string
 	Posts    []Post `gorm:"many2many:Post_Ingredient;"`
