@@ -1,47 +1,30 @@
 package routes
 
 import (
-	"fmt"
-	"log"
-	"github.com/Ttae27/Food_Recipe_Back/models"
+	"github.com/Ttae27/Food_Recipe_Back/controller"
 	"gorm.io/gorm"
+	"github.com/gofiber/fiber/v2"
+	
 )
 
-func createUser(db *gorm.DB,user *models.User) {
-	result := db.Create(user)
-
-	if result.Error != nil{
-		log.Fatalf("Error creating user: %v",result.Error)
-	}
-	fmt.Println("Create User successfully")
-}
-
-func getUser(db *gorm.DB,id uint) *models.User{
-	var user models.User;
-	result := db.First(&user,id);
-
-	if result.Error != nil{
-		log.Fatalf("Error getting user: %v",result.Error);
-	}
-	return &user;
-}
-
-func updateUser(db *gorm.DB,user *models.User) {
-	result := db.Save(user)
-
-	if result.Error != nil{
-		log.Fatalf("Error updating user: %v",result.Error)
-	}
-	fmt.Println("Update User successfully")
-}
-
-func deleteUser(db *gorm.DB,id uint) {
-	var user models.User;
-	result := db.Delete(&user,id)
-
-	if result.Error != nil{
-		log.Fatalf("Error updating user: %v",result.Error)
-	}
-	fmt.Println("Update User successfully")
+func Routes_User(db *gorm.DB, app *fiber.App) {
+	app.Post("/user", func(c *fiber.Ctx) error {
+		return controller.CreateUser(db, c)
+	})
+	app.Post("/login", func(c *fiber.Ctx) error{
+		return controller.LoginUser(db,c)
+	})
+	app.Get("/user/:id",requireAuth, func(c *fiber.Ctx) error {
+		return controller.GetUser(db, c)
+	})
+	app.Put("/user/:id", func(c *fiber.Ctx) error {
+		return controller.UpdateUser(db, c)
+	})
+	app.Delete("/user/:id", func(c *fiber.Ctx) error {
+		return controller.DeleteUser(db, c)
+	})
+	app.Post("/logout/:id", func(c *fiber.Ctx) error {
+		return controller.LogoutUser(c)
+	})
 }
 
