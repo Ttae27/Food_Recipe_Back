@@ -34,6 +34,9 @@ func CreatePost(db *gorm.DB, c *fiber.Ctx) error {
 	}
 	post.Picture = destination
 
+	//uid
+	userId, err := GetUserId(c)
+	post.UserID = userId
 	result := db.Create(post)
 	if result.Error != nil {
 		log.Fatal("Error creating post: ", result.Error)
