@@ -100,7 +100,7 @@ func GetPost(db *gorm.DB, c *fiber.Ctx) error {
 	var post models.Post
 	postId := c.Params("id")
 
-	result := db.Preload("Ingredients").Preload("Like").Preload("PostComments").Preload("PostComments.Comment").Preload("Category").First(&post, postId)
+	result := db.Preload("Ingredients").Preload("Like").Preload("PostComments").Preload("PostComments.Comment").Preload("Category").Preload("User").First(&post, postId)
 	if result.Error != nil {
 		log.Fatal("Error getting post: ", result.Error)
 	}
@@ -121,11 +121,18 @@ func GetsPost(db *gorm.DB, c *fiber.Ctx) error {
 
 func DeletePost(db *gorm.DB, c *fiber.Ctx) error {
 	var post models.Post
+	uidPost := new(models.Post)
 	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 	}
-	result := db.Delete(&post, id)
+	result := db.First(&uidPost, id)
+	//check user
+	if uid, _ := GetUserId(c); uid != uidPost.UserID {
+		return c.SendString("User not writer of this post!")
+	}
+
+	result = db.Delete(&post, id)
 
 	if result.Error != nil {
 		log.Fatal("Error delete post: ", result.Error)
@@ -144,6 +151,12 @@ func UpdatePost(db *gorm.DB, c *fiber.Ctx) error {
 	newPost := new(models.Post)
 
 	result := db.First(&oldPost, id)
+
+	//check user
+	if uid, _ := GetUserId(c); uid != oldPost.UserID {
+		return c.SendString("User not writer of this post!")
+	}
+
 	if result.Error != nil {
 		log.Fatal("Error getting post to update: ", result.Error)
 	}
@@ -213,8 +226,7 @@ func AddComment(db *gorm.DB, c *fiber.Ctx) error {
 
 	user_comment := new(models.User_Comment)
 	user_comment.CommentID = comment.ID
-	i, _ := strconv.ParseUint(form.Value["token"][0], 10, 64)
-	user_comment.UserID = uint(i)
+	user_comment.UserID, _ = GetUserId(c)
 	result = db.Create(user_comment)
 	if result.Error != nil {
 		log.Fatal("Error creating comment: ", result.Error)
@@ -222,7 +234,7 @@ func AddComment(db *gorm.DB, c *fiber.Ctx) error {
 
 	post_comment := new(models.Post_Comment)
 	post_comment.CommentID = comment.ID
-	i, _ = strconv.ParseUint(form.Value["postid"][0], 10, 64)
+	i, _ := strconv.ParseUint(form.Value["postid"][0], 10, 64)
 	post_comment.PostID = uint(i)
 	result = db.Create(post_comment)
 	if result.Error != nil {
@@ -238,22 +250,31 @@ func DeleteComment(db *gorm.DB, c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 	}
+	uid, _ := GetUserId(c)
+	pid, _ := strconv.ParseUint(form.Value["postid"][0], 10, 64)
 	id, err := strconv.ParseUint(form.Value["commentid"][0], 10, 64)
+	//check writer , check comment's user
+	post := new(models.Post)
+	result := db.First(&post, pid)
+	userComment := new(models.User_Comment)
+	result = db.Where("comment_id = ?", id).First(&userComment)
+	if userComment.UserID != uid && post.UserID != uid {
+		return c.SendString("User not allow to delete comment")
+	}
+
 	if err != nil {
-		return c.SendString("193")
+		return c.SendString("delete comment: can't convert commentid")
 	}
-	result := db.Delete(&comment, id)
+	result = db.Delete(&comment, id)
 	if result.Error != nil {
 		log.Fatal("Error delete comment: ", result.Error)
 	}
 
-	cid, _ := strconv.ParseUint(form.Value["postid"][0], 10, 64)
-	result = db.Where("post_id = ? and comment_id = ?", cid, id).Delete(&models.Post_Comment{})
+	result = db.Where("post_id = ? and comment_id = ?", pid, id).Delete(&models.Post_Comment{})
 	if result.Error != nil {
 		log.Fatal("Error delete comment: ", result.Error)
 	}
 
-	uid, _ := strconv.ParseUint(form.Value["token"][0], 10, 64)
 	result = db.Where("user_id = ? and comment_id = ?", uid, id).Delete(&models.User_Comment{})
 	if result.Error != nil {
 		log.Fatal("Error delete comment: ", result.Error)
@@ -270,8 +291,7 @@ func AddLike(db *gorm.DB, c *fiber.Ctx) error {
 	post_like := new(models.Post_Like)
 	i, _ := strconv.ParseUint(form.Value["postid"][0], 10, 64)
 	post_like.PostID = uint(i)
-	i, _ = strconv.ParseUint(form.Value["token"][0], 10, 64)
-	post_like.UserID = uint(i)
+	post_like.UserID, _ = GetUserId(c)
 	result := db.Create(post_like)
 	if result.Error != nil {
 		log.Fatal("Error add Like: ", result.Error)
@@ -287,7 +307,8 @@ func DeleteLike(db *gorm.DB, c *fiber.Ctx) error {
 	}
 
 	pid, _ := strconv.ParseUint(form.Value["postid"][0], 10, 64)
-	uid, _ := strconv.ParseUint(form.Value["token"][0], 10, 64)
+	uid, _ := GetUserId(c)
+
 	result := db.Where("post_id = ? and user_id = ?", pid, uid).Delete(&models.Post_Like{})
 	if result.Error != nil {
 		log.Fatal("Error delete like: ", result.Error)
@@ -304,8 +325,7 @@ func AddBookmark(db *gorm.DB, c *fiber.Ctx) error {
 	bookmark := new(models.Bookmark)
 	i, _ := strconv.ParseUint(form.Value["postid"][0], 10, 64)
 	bookmark.PostID = uint(i)
-	i, _ = strconv.ParseUint(form.Value["token"][0], 10, 64)
-	bookmark.UserID = uint(i)
+	bookmark.UserID, _ = GetUserId(c)
 	result := db.Create(bookmark)
 	if result.Error != nil {
 		log.Fatal("Error add bookmark: ", result.Error)
@@ -321,13 +341,25 @@ func DeleteBookmark(db *gorm.DB, c *fiber.Ctx) error {
 	}
 
 	pid, _ := strconv.ParseUint(form.Value["postid"][0], 10, 64)
-	uid, _ := strconv.ParseUint(form.Value["token"][0], 10, 64)
+	uid, _ := GetUserId(c)
 	result := db.Where("post_id = ? and user_id = ?", pid, uid).Delete(&models.Bookmark{})
 	if result.Error != nil {
 		log.Fatal("Error delete bookmark: ", result.Error)
 	}
 
 	return c.JSON("delete bookmark successful")
+}
+
+func GetsBookmark(db *gorm.DB, c *fiber.Ctx) error {
+	var bookmarks []models.Bookmark
+
+	uid, _ := GetUserId(c)
+	result := db.Where("user_id = ?", uid).Preload("Post").Preload("Post.Category").Find(&bookmarks)
+	if result.Error != nil {
+		log.Fatal("Error getting post: ", result.Error)
+	}
+
+	return c.JSON(bookmarks)
 }
 
 func GetsIngredient(db *gorm.DB, c *fiber.Ctx) error {
