@@ -20,7 +20,7 @@ func CreateUser(db *gorm.DB,c *fiber.Ctx) error {
 	var existingUser models.User
 	if err := db.Where("username ILIKE ?", input.Username).First(&existingUser).Error; err == nil {
 		// If no error, that means a user with this username already exists
-		return c.SendStatus(fiber.StatusBadRequest)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message":"username already exist"})
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password),bcrypt.DefaultCost)
@@ -71,6 +71,13 @@ func UpdateUser(db *gorm.DB,c *fiber.Ctx) error {
 	if err := c.BodyParser(updatedUser);err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message":err})
 	}
+
+	var existingUser models.User
+	if err := db.Where("username ILIKE ?", updatedUser.Username).First(&existingUser).Error; err == nil {
+		// If no error, that means a user with this username already exists
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message":"username already exist"})
+	}
+
 	if updatedUser.Password != "" {
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(updatedUser.Password),bcrypt.DefaultCost)
 		if err != nil {

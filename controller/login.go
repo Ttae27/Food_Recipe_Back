@@ -19,14 +19,14 @@ func LoginUser(db *gorm.DB, c *fiber.Ctx) error{
 
 	result := db.Where("Username = ?",input.Username).First(user)
 	if result.Error != nil{
-		return c.SendStatus(fiber.StatusBadRequest)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message":"No username"})
 	}
 	
 	fmt.Println(user)
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password),[]byte(input.Password));err != nil {
 		fmt.Println(err)
-		return c.SendStatus(fiber.StatusUnauthorized)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message":"Password incorrect"})
 	}
 
 	t,err := GenerateAccessToken(user.ID)
