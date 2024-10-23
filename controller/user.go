@@ -17,6 +17,12 @@ func CreateUser(db *gorm.DB,c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 
+	var existingUser models.User
+	if err := db.Where("username ILIKE ?", input.Username).First(&existingUser).Error; err == nil {
+		// If no error, that means a user with this username already exists
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password),bcrypt.DefaultCost)
 	if err != nil {
 		return c.SendStatus(fiber.StatusInternalServerError)
