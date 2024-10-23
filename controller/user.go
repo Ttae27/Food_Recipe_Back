@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"log"
 	"strconv"
 
 	"github.com/Ttae27/Food_Recipe_Back/models"
@@ -47,8 +46,16 @@ func GetUser(db *gorm.DB, c *fiber.Ctx) error {
 
 	result := db.First(&user, id)
 	if result.Error != nil {
-		log.Fatalf("Error getting user: %v", result.Error)
-		return c.SendStatus(fiber.StatusBadRequest)
+		if result.Error == gorm.ErrRecordNotFound {
+            // Return 404 if user is not found
+            return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+                "error": "User not found",
+            })
+        }
+        // Return 500 if there is some other database error
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+            "error": "Failed to retrieve user",
+        })
 	}
 
 	return c.JSON(user)
