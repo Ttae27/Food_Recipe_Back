@@ -11,6 +11,7 @@ import (
 
 func LogoutUser(c *fiber.Ctx) error {
 	intId, err := strconv.Atoi(c.Params("id"))
+	// fmt.Println(c)
 	if err != nil {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
@@ -23,6 +24,7 @@ func LogoutUser(c *fiber.Ctx) error {
 	}
 	// fmt.Println(jwtSecretKey)
 	cookie := c.Cookies("jwt")
+	fmt.Println(cookie)
 
 	claims := jwt.MapClaims{}
 	token, err := jwt.ParseWithClaims(cookie, claims, func(token *jwt.Token) (interface{}, error) {
@@ -30,14 +32,17 @@ func LogoutUser(c *fiber.Ctx) error {
 	})
 	// fmt.Println(token.Valid)
 	if err != nil || !token.Valid {
-		return c.SendStatus(fiber.StatusUnauthorized)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"Message": "token error"})
 	}
 
-	userIDFloat := claims["user_id"].(float64)
+	userIDFloat, ok := claims["user_id"].(float64)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Invalid token claims"})
+	}
 	userID := uint(userIDFloat)
 	fmt.Println(id, userID)
 	if id != userID {
-		return c.SendStatus(fiber.StatusUnauthorized)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"Message": "user error"})
 	}
 
 	c.ClearCookie("jwt")
@@ -53,7 +58,7 @@ func GetUserId(c *fiber.Ctx) (uint, error) {
 	token, err := jwt.ParseWithClaims(cookie, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(jwtSecretKey), nil
 	})
-	// fmt.Println(token.Valid)
+
 	if err != nil || !token.Valid {
 		return 0, c.SendStatus(fiber.StatusUnauthorized)
 	}

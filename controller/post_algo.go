@@ -10,18 +10,59 @@ import (
 	"gorm.io/gorm"
 )
 
-// SearchPostByName searches for posts by their title in any language.
-func SearchPostByName(db *gorm.DB, c *fiber.Ctx) error {
+// SearchPostByNameAndFilters searches for posts by their title and applies additional filters.
+func SearchPostByNameAndFilters(db *gorm.DB, c *fiber.Ctx) error {
 	searchName := c.Query("title")
+	minPrice := c.Query("min_price", "0")
+	maxPrice := c.Query("max_price", "1000000") // Set a high default max price
+	categoryType := c.Query("type")
 
-	if searchName == "" {
-		return c.Status(fiber.StatusBadRequest).SendString("Search query not provided")
+	// Parse price range
+	min, err := strconv.ParseUint(minPrice, 10, 32)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid min_price"})
+	}
+
+	max, err := strconv.ParseUint(maxPrice, 10, 32)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid max_price"})
+	}
+
+	// Normalize category type
+	var categoryID uint
+	if categoryType != "" {
+		normalizedCategoryType := capitalizeCase(categoryType)
+		var category models.Category
+		if err := db.Where("type = ?", normalizedCategoryType).First(&category).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+					"error": "Category not found",
+				})
+			}
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to retrieve category",
+			})
+		}
+		categoryID = category.ID
 	}
 
 	var posts []models.Post
+	query := db.Model(&models.Post{})
 
-	result := db.Where("title LIKE ?", "%"+searchName+"%").
-		Preload("Ingredients").
+	// Apply title filter if provided
+	if searchName != "" {
+		query = query.Where("title LIKE ?", "%"+searchName+"%")
+	}
+
+	// Apply price range filter
+	query = query.Where("price BETWEEN ? AND ?", min, max)
+
+	// Apply category filter if provided
+	if categoryType != "" {
+		query = query.Where("category_id = ?", categoryID)
+	}
+
+	result := query.Preload("Ingredients").
 		Preload("PostComments").
 		Preload("Like").
 		Find(&posts)
@@ -37,7 +78,15 @@ func SearchPostByName(db *gorm.DB, c *fiber.Ctx) error {
 	return c.JSON(posts)
 }
 
-// Calculate Calories
+// capitalizeCase converts the first letter to uppercase and the rest to lowercase.
+func capitalizeCase(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+	return strings.ToUpper(s[:1]) + strings.ToLower(s[1:])
+}
+
+// CalculateCalories calculates the total calories for a list of ingredients and their quantities.
 func CalculateCalories(db *gorm.DB, ingredientSlice []string, quantitySlice []string) (float64, error) {
 	var totalCalories float64
 
@@ -63,7 +112,7 @@ func CalculateCalories(db *gorm.DB, ingredientSlice []string, quantitySlice []st
 	return totalCalories, nil
 }
 
-// Calculate Price
+// CalculatePrice calculates the total price for a list of ingredients and their quantities.
 func CalculatePrice(db *gorm.DB, ingredientSlice []string, quantitySlice []string) (float64, error) {
 	var totalPrice float64
 
@@ -87,76 +136,4 @@ func CalculatePrice(db *gorm.DB, ingredientSlice []string, quantitySlice []strin
 	}
 
 	return totalPrice, nil
-}
-
-// Price Range
-func GetPostsByPriceRange(db *gorm.DB, c *fiber.Ctx) error {
-	minPrice := c.Query("min_price", "0")
-	maxPrice := c.Query("max_price", "1000000") // Set a high default max price
-
-	min, err := strconv.ParseUint(minPrice, 10, 32)
-	if err != nil {
-		return c.Status(400).JSON(fiber.Map{"error": "Invalid min_price"})
-	}
-
-	max, err := strconv.ParseUint(maxPrice, 10, 32)
-	if err != nil {
-		return c.Status(400).JSON(fiber.Map{"error": "Invalid max_price"})
-	}
-
-	var posts []models.Post
-	result := db.Where("price BETWEEN ? AND ?", min, max).Find(&posts)
-	if result.Error != nil {
-		return c.Status(500).JSON(fiber.Map{"error": "Database error"})
-	}
-
-	return c.JSON(posts)
-}
-
-// capitalizeCase converts the first letter to uppercase and the rest to lowercase.
-func capitalizeCase(s string) string {
-	if len(s) == 0 {
-		return s
-	}
-	return strings.ToUpper(s[:1]) + strings.ToLower(s[1:])
-}
-
-// Category Type 
-func GetPostsByCategoryType(db *gorm.DB, c *fiber.Ctx) error {
-	categoryType := c.Query("type")
-
-	if categoryType == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Category type is required",
-		})
-	}
-
-	normalizedCategoryType := capitalizeCase(categoryType)
-
-	var category models.Category
-	if err := db.Where("type = ?", normalizedCategoryType).First(&category).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-				"error": "Category not found",
-			})
-		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to retrieve category",
-		})
-	}
-
-	var posts []models.Post
-	if err := db.Where("category_id = ?", category.ID).
-		Preload("Category").
-		Preload("Ingredients").
-		Preload("Like").
-		Preload("PostComments").
-		Preload("Bookmarks").
-		Find(&posts).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to retrieve posts",
-		})
-	}
-
-	return c.JSON(posts)
 }

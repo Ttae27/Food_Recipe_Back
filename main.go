@@ -78,6 +78,7 @@ func main() {
 		&models.Post_Category{},
 		&models.User{},
 		&models.User_Comment{},
+		&models.IngredientWithQuantity{},
 	)
 
 	// Create a new Fiber app

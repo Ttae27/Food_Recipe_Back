@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -27,12 +26,14 @@ func CreatePost(db *gorm.DB, c *fiber.Ctx) error {
 	i, _ = strconv.ParseUint(form.Value["category"][0], 10, 64)
 	post.CategoryID = uint(i)
 
-	image := form.File["image"][0]
-	destination := fmt.Sprintf("./uploads/%s", image.Filename)
-	if err := c.SaveFile(image, destination); err != nil {
-		return err
-	}
-	post.Picture = destination
+	// image := form.File["image"][0]
+	// destination := fmt.Sprintf("./uploads/%s", image.Filename)
+	// if err := c.SaveFile(image, destination); err != nil {
+	// 	return err
+	// }
+	// post.Picture = destination
+
+	post.Picture = form.Value["image"][0]
 
 	//uid
 	userId, err := GetUserId(c)
@@ -80,14 +81,19 @@ func CreatePost(db *gorm.DB, c *fiber.Ctx) error {
 		log.Fatal("Error saving post with calories and price: ", result.Error)
 	}
 
+	postIn := new(models.Post_Ingredient)
 	for index, ingredients := range ingredientSlice {
-		postIn := new(models.Post_Ingredient)
+		inWithQuan := new(models.IngredientWithQuantity)
 		postIn.PostID = post.ID
+
 		i, _ := strconv.ParseUint(ingredients, 10, 64)
-		postIn.IngredientID = uint(i)
+		inWithQuan.IngredientID = uint(i)
 		i, _ = strconv.ParseUint(quantitySlice[index], 10, 64)
-		postIn.Quantity = uint(i)
-		result := db.Create(postIn)
+		inWithQuan.Quantity = uint(i)
+		result := db.Create(inWithQuan)
+		db.Last(&inWithQuan)
+		postIn.IngredientWithQuantityID = inWithQuan.ID
+		result = db.Create(postIn)
 		if result.Error != nil {
 			log.Fatal("Error insert ingredient to post: ", result.Error)
 		}
@@ -100,7 +106,7 @@ func GetPost(db *gorm.DB, c *fiber.Ctx) error {
 	var post models.Post
 	postId := c.Params("id")
 
-	result := db.Preload("Ingredients").Preload("Like").Preload("PostComments").Preload("PostComments.Comment").Preload("Category").Preload("User").First(&post, postId)
+	result := db.Preload("Ingredients").Preload("Ingredients.IngredientWithQuantity.Ingredient").Preload("Like").Preload("PostComments").Preload("PostComments.Comment").Preload("PostComments.User").Preload("Category").Preload("User").First(&post, postId)
 	if result.Error != nil {
 		log.Fatal("Error getting post: ", result.Error)
 	}
@@ -112,6 +118,18 @@ func GetsPost(db *gorm.DB, c *fiber.Ctx) error {
 	var posts []models.Post
 
 	result := db.Preload("Ingredients").Preload("PostComments").Preload("Like").Find(&posts)
+	if result.Error != nil {
+		log.Fatal("Error getting post: ", result.Error)
+	}
+
+	return c.JSON(posts)
+}
+
+func GetsPostWithUser(db *gorm.DB, c *fiber.Ctx) error {
+	var posts []models.Post
+
+	uid, _ := GetUserId(c)
+	result := db.Where("user_id = ?", uid).Find(&posts)
 	if result.Error != nil {
 		log.Fatal("Error getting post: ", result.Error)
 	}
@@ -173,16 +191,20 @@ func UpdatePost(db *gorm.DB, c *fiber.Ctx) error {
 	quantity := strings.Trim(form.Value["quantity"][0], "[]")
 	quantitySlice := strings.Split(quantity, ",")
 
+	postIn := new(models.Post_Ingredient)
 	for index, ingredients := range ingredientSlice {
-		postIn := new(models.Post_Ingredient)
+		inWithQuan := new(models.IngredientWithQuantity)
 		postIn.PostID = uint(id)
 		i, _ := strconv.ParseUint(ingredients, 10, 64)
-		postIn.IngredientID = uint(i)
+		inWithQuan.IngredientID = uint(i)
 		i, _ = strconv.ParseUint(quantitySlice[index], 10, 64)
-		postIn.Quantity = uint(i)
-		result := db.Create(postIn)
+		inWithQuan.Quantity = uint(i)
+		result := db.Create(inWithQuan)
+		db.Last(&inWithQuan)
+		postIn.IngredientWithQuantityID = inWithQuan.ID
+		result = db.Create(postIn)
 		if result.Error != nil {
-			log.Fatal("Error insert(update) ingredient to post: ", result.Error)
+			log.Fatal("Error insert ingredient to post: ", result.Error)
 		}
 	}
 
@@ -236,6 +258,7 @@ func AddComment(db *gorm.DB, c *fiber.Ctx) error {
 	post_comment.CommentID = comment.ID
 	i, _ := strconv.ParseUint(form.Value["postid"][0], 10, 64)
 	post_comment.PostID = uint(i)
+	post_comment.UserID, _ = GetUserId(c)
 	result = db.Create(post_comment)
 	if result.Error != nil {
 		log.Fatal("Error creating comment: ", result.Error)
@@ -315,6 +338,18 @@ func DeleteLike(db *gorm.DB, c *fiber.Ctx) error {
 	}
 
 	return c.JSON("delete like successful")
+}
+
+func GetsLike(db *gorm.DB, c *fiber.Ctx) error {
+	var likes []models.Post_Like
+
+	uid, _ := GetUserId(c)
+	result := db.Where("user_id = ?", uid).Preload("Post").Find(&likes)
+	if result.Error != nil {
+		log.Fatal("Error getting like: ", result.Error)
+	}
+
+	return c.JSON(likes)
 }
 
 func AddBookmark(db *gorm.DB, c *fiber.Ctx) error {

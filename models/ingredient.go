@@ -25,3 +25,10 @@ type Ingredient_IngredientCategory struct {
 	IngredientID         uint
 	Ingredient           Ingredient
 }
+
+type IngredientWithQuantity struct {
+	gorm.Model
+	IngredientID uint
+	Ingredient   Ingredient
+	Quantity     uint
+}

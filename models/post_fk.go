@@ -11,12 +11,13 @@ type Post_Comment struct {
 	PostID    uint
 	CommentID uint
 	Comment   Comment
+	UserID    uint
+	User      User
 }
 
 type Post_Ingredient struct {
-	PostID       uint
-	Post         Post
-	IngredientID uint
-	Ingredient   Ingredient
-	Quantity     uint
+	PostID                   uint
+	Post                     Post
+	IngredientWithQuantityID uint
+	IngredientWithQuantity   IngredientWithQuantity
 }
